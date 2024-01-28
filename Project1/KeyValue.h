@@ -11,10 +11,14 @@ private:
 	std::mutex mutex;
 
 public:
+	KeyValue();
 	KeyValue(std::string, int);
 
 	std::string getKey();
 	int getValue();
+
+	void setKey(std::string);
+	void setValue(int);
 
 	void increment();
 };
