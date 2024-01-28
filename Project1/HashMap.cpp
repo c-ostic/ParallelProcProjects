@@ -13,6 +13,11 @@ HashMap::~HashMap()
 	delete[] array;
 }
 
+int HashMap::getSize()
+{
+	return size;
+}
+
 /*
 * Generate a hash for a given key
 */
@@ -61,7 +66,10 @@ void HashMap::checkResize()
 		{
 			if (!oldArray[i].getKey().empty())
 			{
-				put(oldArray[i].getKey(), oldArray[i].getValue());
+				int index = find(oldArray[i].getKey());
+				index = (index + 1) * -1;
+				array[index].setKey(oldArray[i].getKey());
+				array[index].setValue(oldArray[i].getValue());
 			}
 		}
 
@@ -74,7 +82,7 @@ void HashMap::checkResize()
 /*
 * Tries to find the location of key in the array
 * If found, returns the index
-* If not found, returns the index of the first available empty space as a negative number
+* If not found, returns the index of the first available empty space as a negative number - 1
 */
 int HashMap::find(std::string key)
 {
@@ -84,14 +92,14 @@ int HashMap::find(std::string key)
 	std::string currentKey = array[hashCode].getKey();
 	while (!currentKey.empty() && key.compare(currentKey) != 0)
 	{
-		hashCode++;
+		hashCode = (hashCode + 1) % capacity;
 		currentKey = array[hashCode].getKey();
 	}
 
 	// If an empty space was found, return a negative number of that index
 	if (currentKey.empty())
 	{
-		return hashCode * -1;
+		return hashCode * -1 - 1;
 	}
 	// Otherwise return the index where the key was found
 	else
@@ -122,6 +130,8 @@ void HashMap::put(std::string key, int value)
 	else
 	{
 		// This is a new key, so it must be added to the array
+		// Return index to a positive number
+		index = (index + 1) * -1;
 		array[index].setKey(key);
 		array[index].setValue(value);
 		size++;
@@ -150,7 +160,7 @@ int HashMap::get(std::string key)
 
 /*
 * Tries to increment the current key
-* If the key doesn't exist, nothing happens
+* If the key doesn't exist, call put instead
 */
 void HashMap::increment(std::string key)
 {
@@ -159,6 +169,10 @@ void HashMap::increment(std::string key)
 	if (index >= 0)
 	{
 		array[index].increment();
+	}
+	else
+	{
+		put(key, 1);
 	}
 }
 

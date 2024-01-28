@@ -4,7 +4,7 @@
 class HashMap
 {
 private:
-	const int INITIAL_CAPACITY = 16;
+	const int INITIAL_CAPACITY = 8;
 	const float LOAD_FACTOR = 0.75;
 
 	int size, capacity;
@@ -19,6 +19,8 @@ private:
 public:
 	HashMap();
 	~HashMap();
+
+	int getSize();
 
 	void put(std::string, int);
 	int get(std::string);
