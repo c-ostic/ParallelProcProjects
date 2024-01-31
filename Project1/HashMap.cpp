@@ -66,8 +66,16 @@ void HashMap::checkResize()
 		{
 			if (!oldArray[i].getKey().empty())
 			{
-				int index = find(oldArray[i].getKey());
-				index = (index + 1) * -1;
+				int index = hash(oldArray[i].getKey());
+
+				// Search until the key or an empty space is found in the array
+				std::string currentKey = array[index].getKey();
+				while (!currentKey.empty() && oldArray[i].getKey().compare(currentKey) != 0)
+				{
+					index = (index + 1) % capacity;
+					currentKey = array[index].getKey();
+				}
+
 				array[index].setKey(oldArray[i].getKey());
 				array[index].setValue(oldArray[i].getValue());
 			}
@@ -88,6 +96,7 @@ int HashMap::find(std::string key)
 {
 	int hashCode = hash(key);
 
+	mutex.lock_shared();
 	// Search until the key or an empty space is found in the array
 	std::string currentKey = array[hashCode].getKey();
 	while (!currentKey.empty() && key.compare(currentKey) != 0)
@@ -95,6 +104,7 @@ int HashMap::find(std::string key)
 		hashCode = (hashCode + 1) % capacity;
 		currentKey = array[hashCode].getKey();
 	}
+	mutex.unlock_shared();
 
 	// If an empty space was found, return a negative number of that index
 	if (currentKey.empty())
@@ -115,33 +125,33 @@ int HashMap::find(std::string key)
 */
 void HashMap::put(std::string key, int value)
 {
-	if (key.empty()) {
+	if (key.empty()) 
+	{
 		return;
 	}
 
 	checkResize();
-
-	// This may be a new key, so lock just in case
-	mutex.lock();
 
 	int index = find(key);
 
 	// If the index is positive, the key is already in the array, so just increment
 	if (index >= 0)
 	{
+		mutex.lock_shared();
 		array[index].increment();
+		mutex.unlock_shared();
 	}
 	else
 	{
 		// This is a new key, so it must be added to the array
 		// Return index to a positive number
+		mutex.lock();
 		index = (index + 1) * -1;
 		array[index].setKey(key);
 		array[index].setValue(value);
+		mutex.unlock();
 		size++;
 	}
-
-	mutex.unlock();
 }
 
 /*
@@ -154,7 +164,11 @@ int HashMap::get(std::string key)
 
 	if (index >= 0)
 	{
-		return array[index].getValue();
+		mutex.lock_shared();
+		int val = array[index].getValue();
+		mutex.unlock_shared();
+
+		return val;
 	}
 	else
 	{
@@ -172,7 +186,9 @@ void HashMap::increment(std::string key)
 
 	if (index >= 0)
 	{
+		mutex.lock_shared();
 		array[index].increment();
+		mutex.unlock_shared();
 	}
 	else
 	{

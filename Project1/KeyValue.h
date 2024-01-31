@@ -1,14 +1,12 @@
 #pragma once
 #include <string>
-#include <mutex>
+#include <atomic>
 
 class KeyValue
 {
 private:
 	std::string key;
-	int value;
-
-	std::mutex mutex;
+	std::atomic<int> value;
 
 public:
 	KeyValue();

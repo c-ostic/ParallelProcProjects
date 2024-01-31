@@ -33,7 +33,5 @@ void KeyValue::setValue(int newValue)
 
 void KeyValue::increment()
 {
-	mutex.lock();
 	this->value++;
-	mutex.unlock();
 }
