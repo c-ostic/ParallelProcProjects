@@ -115,6 +115,10 @@ int HashMap::find(std::string key)
 */
 void HashMap::put(std::string key, int value)
 {
+	if (key.empty()) {
+		return;
+	}
+
 	checkResize();
 
 	// This may be a new key, so lock just in case

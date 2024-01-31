@@ -6,11 +6,14 @@
 #include <string>
 #include <thread>
 #include <map>
+#include "HashMap.h"
 
 using namespace std;
 
 std::string processString(std::string);
 void countFrequency(string[], int, int);
+
+HashMap* hashmap = new HashMap();
 
 int main()
 {
@@ -81,6 +84,12 @@ int main()
             threads[i].join();
             cout << "Thread " << i << " finished" << endl;
         }
+        
+        KeyValue* words = hashmap->getAll();
+
+        for (int i = 0; i < hashmap->getSize(); i++) {
+            cout << words[i].getKey() << " " << words[i].getValue() << endl;
+        }
 
     }
     else {
@@ -89,40 +98,47 @@ int main()
 
 }
 
-//For now, uses c++ map and multimap to add each line into map and count frequency for output
 void countFrequency(string linesArr[], int start, int end) {
 
-    std::map<std::string, int> frequencyMap;
     //Each thread traverse through the array from start to end indicies
     for (int i = start; i < end; i++) {
         // Check if value is in the map
-        if (frequencyMap.contains(linesArr[i]))
-        {
-            // found, increase count
-            frequencyMap[linesArr[i]]++;
-        }
-        else
-        {
-            // not found, add to the map
-            frequencyMap[linesArr[i]] = 1;
-        }
-    }
+        int position = 0;
+        string word;
+        while ((position = linesArr[i].find(' ')) != string::npos) {
 
-    // Put into multimap to sort
-    std::multimap<int, std::string> sortedMap;
-    std::map<std::string, int>::iterator iter = frequencyMap.begin();
-    while (iter != frequencyMap.end())
-    {
-        sortedMap.insert({ iter->second, iter->first });
-        iter++;
-    }
+            word = linesArr[i].substr(0, position);
+            word = processString(word);
 
-    // Print multimap in reverse order
-    std::multimap<int, std::string>::iterator sortedIter = sortedMap.end();
-    while (sortedIter != sortedMap.begin())
-    {
-        sortedIter--;
-        std::cout << sortedIter->second << " " << sortedIter->first << std::endl;
+            if (hashmap->contains(word))
+            {
+                // found, increase count
+                hashmap->increment(word);
+            }
+            else
+            {
+                // not found, add to the map
+                hashmap->put(word, 1);
+            }
+
+            linesArr[i].erase(0, position + 1);
+        }
+        //The last word in the line doesn't have a space after it
+        //And since each word is erased, the element of linesArr will just be the last word
+            word = linesArr[i];
+            word = processString(word);
+
+            if (hashmap->contains(word))
+            {
+                // found, increase count
+                hashmap->increment(word);
+            }
+            else
+            {
+                // not found, add to the map
+                hashmap->put(word, 1);
+            }
+
     }
 
 }
@@ -137,7 +153,7 @@ std::string processString(std::string input)
     {
         if (input[i] >= 'a' && input[i] <= 'z')
             output += input[i] - toUpperDiff;
-        else if (input[i] >= 'A' && input[i] <= 'Z')
+        else if ((input[i] >= 'A' && input[i] <= 'Z') || input[i] == '-' || input[i] == '\'')
             output += input[i];
         //ignore everything else
     }
