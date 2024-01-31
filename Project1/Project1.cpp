@@ -12,6 +12,7 @@ using namespace std;
 
 std::string processString(std::string);
 void countFrequency(string[], int, int);
+void swap(KeyValue*, KeyValue*);
 
 HashMap* hashmap = new HashMap();
 
@@ -87,6 +88,24 @@ int main()
         
         KeyValue* words = hashmap->getAll();
 
+        //Selection sort implementation for our HashMap
+        //https://www.geeksforgeeks.org/selection-sort/
+        int i, j, max_index;
+
+        for (i = 0; i < hashmap->getSize(); i++) {
+
+            // Find the max element in unsorted array 
+            max_index = i;
+            for (j = i + 1; j < hashmap->getSize(); j++) {
+                if (words[j].getValue() > words[max_index].getValue())
+                    max_index = j;
+            }
+
+            // Swap the found maximum element with the first element 
+            if (max_index != i)
+                swap(&words[max_index], &words[i]);
+        }
+
         for (int i = 0; i < hashmap->getSize(); i++) {
             cout << words[i].getKey() << " " << words[i].getValue() << endl;
         }
@@ -97,7 +116,15 @@ int main()
     }
 
 }
+void swap(KeyValue* pair1, KeyValue* pair2) {
+    KeyValue* temp = new KeyValue(pair1->getKey(), pair1->getValue());
+    pair1->setKey(pair2->getKey());
+    pair1->setValue(pair2->getValue());
 
+    pair2->setKey(temp->getKey());
+    pair2-> setValue(temp->getValue());
+
+}
 void countFrequency(string linesArr[], int start, int end) {
 
     //Each thread traverse through the array from start to end indicies
