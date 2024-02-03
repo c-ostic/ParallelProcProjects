@@ -5,13 +5,13 @@
 #include <fstream>
 #include <string>
 #include <thread>
-#include <map>
+#include <chrono>
 #include "HashMap.h"
 
 using namespace std;
 
 std::string processString(std::string);
-void countFrequency(string[], int, int);
+void countFrequency(string*, int, int, int);
 void swap(KeyValue*, KeyValue*);
 
 HashMap* hashmap = new HashMap();
@@ -28,6 +28,11 @@ int main()
     std::thread* threads = new thread[numThreads];
 
     std::ifstream file(filename);
+
+    chrono::time_point<chrono::system_clock> startTotal, endTotal, startFile, endFile, startCount, endCount, startSort, endSort;
+
+    startTotal = chrono::system_clock::now();
+    startFile = chrono::system_clock::now();
 
     //Open the file and read line by line into array
     if (file.is_open()) {
@@ -52,9 +57,11 @@ int main()
                break; // Break out of the loop on error
            }
 
-           cout << linesArray[i] << endl;
+           // cout << linesArray[i] << endl;
 
        }
+       endFile = chrono::system_clock::now();
+       startCount = chrono::system_clock::now();
 
         // Calculate the number of lines each thread should process
         // Handles uneven division and adds the extra lines evenly 
@@ -71,11 +78,11 @@ int main()
                 endLine++;
             }
             //Spawn threads
-            threads[i] = thread(countFrequency, linesArray, currentLine, endLine);
+            threads[i] = thread(countFrequency, linesArray, currentLine, endLine, i);
             cout << "Thread " << i << " spawned" << endl;
         
-            std::cout << "Start: " << currentLine << " ";
-            std::cout << "End: " << endLine << endl;
+            //std::cout << "Start: " << currentLine << " ";
+            //std::cout << "End: " << endLine << endl;
 
             currentLine = endLine;
         }
@@ -83,10 +90,13 @@ int main()
         // Join threads
         for (int i = 0; i < numThreads; ++i) {
             threads[i].join();
-            cout << "Thread " << i << " finished" << endl;
+            //cout << "Thread " << i << " finished" << endl;
         }
+
+        endCount = chrono::system_clock::now();
+        startSort = chrono::system_clock::now();
         
-        KeyValue* words = hashmap->getAll();
+        KeyValue* words = hashmap->getAll();        
 
         //Selection sort implementation for our HashMap
         //https://www.geeksforgeeks.org/selection-sort/
@@ -106,10 +116,23 @@ int main()
                 swap(&words[max_index], &words[i]);
         }
 
+        endSort = chrono::system_clock::now();
+        endTotal = chrono::system_clock::now();
+
         for (int i = 0; i < hashmap->getSize(); i++) {
             cout << words[i].getKey() << " " << words[i].getValue() << endl;
         }
 
+        chrono::duration<double> elapsedTotal, elapsedFile, elapsedCount, elapsedSort;
+        elapsedTotal = endTotal - startTotal;
+        elapsedFile = endFile - startFile;
+        elapsedCount = endCount - startCount;
+        elapsedSort = endSort - startSort;
+
+        cout << "Elapsed time file reading: " << elapsedFile.count() << endl;
+        cout << "Elapsed time word count: " << elapsedCount.count() << endl;
+        cout << "Elapsed time sort: " << elapsedSort.count() << endl;
+        cout << "Elapsed time total: " << elapsedTotal.count() << endl;
     }
     else {
         cout << "File not opened.";
@@ -125,7 +148,7 @@ void swap(KeyValue* pair1, KeyValue* pair2) {
     pair2-> setValue(temp->getValue());
 
 }
-void countFrequency(string linesArr[], int start, int end) {
+void countFrequency(string* linesArr, int start, int end, int threadNum) {
 
     //Each thread traverse through the array from start to end indicies
     for (int i = start; i < end; i++) {
@@ -167,6 +190,8 @@ void countFrequency(string linesArr[], int start, int end) {
             }
 
     }
+
+    cout << "Thread " << threadNum << " finished" << endl;
 
 }
 

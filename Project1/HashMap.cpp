@@ -1,3 +1,4 @@
+#include <iostream>
 #include "HashMap.h"
 
 HashMap::HashMap()
@@ -96,7 +97,6 @@ int HashMap::find(std::string key)
 {
 	int hashCode = hash(key);
 
-	mutex.lock_shared();
 	// Search until the key or an empty space is found in the array
 	std::string currentKey = array[hashCode].getKey();
 	while (!currentKey.empty() && key.compare(currentKey) != 0)
@@ -104,7 +104,6 @@ int HashMap::find(std::string key)
 		hashCode = (hashCode + 1) % capacity;
 		currentKey = array[hashCode].getKey();
 	}
-	mutex.unlock_shared();
 
 	// If an empty space was found, return a negative number of that index
 	if (currentKey.empty())
@@ -130,28 +129,28 @@ void HashMap::put(std::string key, int value)
 		return;
 	}
 
-	checkResize();
-
+	mutex.lock();
 	int index = find(key);
 
 	// If the index is positive, the key is already in the array, so just increment
 	if (index >= 0)
 	{
-		mutex.lock_shared();
 		array[index].increment();
-		mutex.unlock_shared();
 	}
 	else
 	{
 		// This is a new key, so it must be added to the array
 		// Return index to a positive number
-		mutex.lock();
+		
 		index = (index + 1) * -1;
 		array[index].setKey(key);
 		array[index].setValue(value);
-		mutex.unlock();
 		size++;
+
 	}
+	mutex.unlock();
+
+	checkResize();
 }
 
 /*
@@ -160,7 +159,9 @@ void HashMap::put(std::string key, int value)
 */
 int HashMap::get(std::string key)
 {
+	mutex.lock_shared();
 	int index = find(key);
+	mutex.unlock_shared();
 
 	if (index >= 0)
 	{
@@ -182,16 +183,17 @@ int HashMap::get(std::string key)
 */
 void HashMap::increment(std::string key)
 {
+	mutex.lock_shared();
 	int index = find(key);
 
 	if (index >= 0)
 	{
-		mutex.lock_shared();
 		array[index].increment();
 		mutex.unlock_shared();
 	}
 	else
 	{
+		mutex.unlock_shared();
 		put(key, 1);
 	}
 }
@@ -201,7 +203,11 @@ void HashMap::increment(std::string key)
 */
 bool HashMap::contains(std::string key)
 {
-	return find(key) >= 0;
+	mutex.lock_shared();
+	int index = find(key);
+	mutex.unlock_shared();
+
+	return index >= 0;
 }
 
 /*

@@ -1,9 +1,7 @@
 #include "KeyValue.h"
 
-KeyValue::KeyValue()
-{
-	KeyValue("", 0);
-}
+KeyValue::KeyValue() : KeyValue("", 0)
+{}
 
 KeyValue::KeyValue(std::string key, int value)
 {
