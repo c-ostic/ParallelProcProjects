@@ -12,7 +12,10 @@ using namespace std;
 
 std::string processString(std::string);
 void countFrequency(string*, int, int, int);
+void selectionSort(KeyValue*);
 void swap(KeyValue*, KeyValue*);
+void mergeSort(KeyValue*, int, int);
+void merge(KeyValue*, int, int, int);
 
 HashMap* hashmap = new HashMap();
 
@@ -28,6 +31,8 @@ int main()
     std::thread* threads = new thread[numThreads];
 
     std::ifstream file(filename);
+
+    std::ofstream outputFile("output.txt");
 
     chrono::time_point<chrono::system_clock> startTotal, endTotal, startFile, endFile, startCount, endCount, startSort, endSort;
 
@@ -96,31 +101,17 @@ int main()
         endCount = chrono::system_clock::now();
         startSort = chrono::system_clock::now();
         
-        KeyValue* words = hashmap->getAll();        
-
-        //Selection sort implementation for our HashMap
-        //https://www.geeksforgeeks.org/selection-sort/
-        int i, j, max_index;
-
-        for (i = 0; i < hashmap->getSize(); i++) {
-
-            // Find the max element in unsorted array 
-            max_index = i;
-            for (j = i + 1; j < hashmap->getSize(); j++) {
-                if (words[j].getValue() > words[max_index].getValue())
-                    max_index = j;
-            }
-
-            // Swap the found maximum element with the first element 
-            if (max_index != i)
-                swap(&words[max_index], &words[i]);
-        }
+        KeyValue* words = hashmap->getAll();
+        int start = 0;
+        int end = hashmap->getSize() - 1;
+        //selectionSort(words);
+        mergeSort(words, start, end);
 
         endSort = chrono::system_clock::now();
         endTotal = chrono::system_clock::now();
 
         for (int i = 0; i < hashmap->getSize(); i++) {
-            cout << words[i].getKey() << " " << words[i].getValue() << endl;
+            outputFile << words[i].getKey() << " " << words[i].getValue() << endl;
         }
 
         chrono::duration<double> elapsedTotal, elapsedFile, elapsedCount, elapsedSort;
@@ -139,6 +130,27 @@ int main()
     }
 
 }
+
+//Selection sort implementation for our HashMap
+//https://www.geeksforgeeks.org/selection-sort/
+void selectionSort(KeyValue* words) {
+
+    int i, j, max_index;
+
+    for (i = 0; i < hashmap->getSize(); i++) {
+
+        // Find the max element in unsorted array 
+        max_index = i;
+        for (j = i + 1; j < hashmap->getSize(); j++) {
+            if (words[j].getValue() > words[max_index].getValue())
+                max_index = j;
+        }
+
+        // Swap the found maximum element with the first element 
+        if (max_index != i)
+            swap(&words[max_index], &words[i]);
+    }
+}
 void swap(KeyValue* pair1, KeyValue* pair2) {
     KeyValue* temp = new KeyValue(pair1->getKey(), pair1->getValue());
     pair1->setKey(pair2->getKey());
@@ -148,6 +160,84 @@ void swap(KeyValue* pair1, KeyValue* pair2) {
     pair2-> setValue(temp->getValue());
 
 }
+
+//Start is for left index and end is right index of the sub-array of arr to be sorted
+//https://www.geeksforgeeks.org/merge-sort/
+void mergeSort(KeyValue* array, int const start, int const end)
+{
+    if (start >= end)
+        return;
+
+    int mid = start + (end - start) / 2;
+    mergeSort(array, start, mid);
+    mergeSort(array, mid + 1, end);
+    merge(array, start, mid, end);
+}
+
+// Merges two subarrays of array[].
+// First subarray is arr[begin..mid]
+// Second subarray is arr[mid+1..end]
+static void merge(KeyValue* array, int const left, int const mid, int const right)
+{
+    int const subArrayOne = mid - left + 1;
+    int const subArrayTwo = right - mid;
+
+    // Create temp arrays
+    KeyValue* leftArray = new KeyValue[subArrayOne];
+    KeyValue* rightArray = new KeyValue[subArrayTwo];
+
+    // Copy data to temp arrays leftArray[] and rightArray[]
+    for (int i = 0; i < subArrayOne; i++) {
+        leftArray[i].setKey(array[left + i].getKey());
+        leftArray[i].setValue(array[left + i].getValue());
+    }
+
+    for (int j = 0; j < subArrayTwo; j++) {
+        rightArray[j].setKey(array[mid + 1 + j].getKey());
+        rightArray[j].setValue(array[mid + 1 + j].getValue());
+    }
+
+
+    int indexOfSubArrayOne = 0;
+    int indexOfSubArrayTwo = 0;
+    int indexOfMergedArray = left;
+
+    // Merge the temp arrays back into array[left..right]
+    while (indexOfSubArrayOne < subArrayOne && indexOfSubArrayTwo < subArrayTwo) {
+        if (leftArray[indexOfSubArrayOne].getValue() >= rightArray[indexOfSubArrayTwo].getValue()) {
+            array[indexOfMergedArray].setKey(leftArray[indexOfSubArrayOne].getKey());
+            array[indexOfMergedArray].setValue(leftArray[indexOfSubArrayOne].getValue());
+            indexOfSubArrayOne++;
+        }
+        else {
+            array[indexOfMergedArray].setKey(rightArray[indexOfSubArrayTwo].getKey());
+            array[indexOfMergedArray].setValue(rightArray[indexOfSubArrayTwo].getValue());
+            indexOfSubArrayTwo++;
+        }
+        indexOfMergedArray++;
+    }
+
+    // Copy the remaining elements of
+    // left[], if there are any
+    while (indexOfSubArrayOne < subArrayOne) {
+        array[indexOfMergedArray].setKey(leftArray[indexOfSubArrayOne].getKey());
+        array[indexOfMergedArray].setValue(leftArray[indexOfSubArrayOne].getValue());
+        indexOfSubArrayOne++;
+        indexOfMergedArray++;
+    }
+
+    // Copy the remaining elements of
+    // right[], if there are any
+    while (indexOfSubArrayTwo < subArrayTwo) {
+        array[indexOfMergedArray].setKey(rightArray[indexOfSubArrayTwo].getKey());
+        array[indexOfMergedArray].setValue(rightArray[indexOfSubArrayTwo].getValue());
+        indexOfSubArrayTwo++;
+        indexOfMergedArray++;
+    }
+    delete[] leftArray;
+    delete[] rightArray;
+}
+
 void countFrequency(string* linesArr, int start, int end, int threadNum) {
 
     //Each thread traverse through the array from start to end indicies
