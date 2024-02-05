@@ -32,11 +32,13 @@ int HashMap::hash(std::string key)
 
 	int fullHash = key[0];
 	int p = 31;
+	int pow = 1;
 
 	for (int i = 1; i < key.length(); i++)
 	{
 		// Add to the hash
-		fullHash += key[i] * p;
+		fullHash += key[i] * pow;
+		pow = pow * p % INT16_MAX;
 	}
 
 	// Reduce full hash to fit within the current capacity

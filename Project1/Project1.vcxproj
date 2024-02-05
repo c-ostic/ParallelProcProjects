@@ -136,6 +136,8 @@
   <ItemGroup>
     <ClInclude Include="HashMap.h" />
     <ClInclude Include="KeyValue.h" />
+    <Text Include="bible.txt" />
+    <Text Include="big.txt" />
     <Text Include="test.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
