@@ -27,6 +27,7 @@ public:
 	int get(std::string);
 	void increment(std::string);
 	bool contains(std::string);
+	void addTo(std::string, int);
 
 	KeyValue* getAll();
 };

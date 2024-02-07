@@ -1,4 +1,3 @@
-#include <iostream>
 #include "HashMap.h"
 
 HashMap::HashMap()
@@ -210,6 +209,27 @@ bool HashMap::contains(std::string key)
 	mutex.unlock_shared();
 
 	return index >= 0;
+}
+
+/*
+* Tries to add value to the current key
+* If the key doesn't exist, call put instead
+*/
+void HashMap::addTo(std::string key, int value)
+{
+	mutex.lock_shared();
+	int index = find(key);
+
+	if (index >= 0)
+	{
+		array[index].setValue(array[index].getValue() + value);
+		mutex.unlock_shared();
+	}
+	else
+	{
+		mutex.unlock_shared();
+		put(key, value);
+	}
 }
 
 /*

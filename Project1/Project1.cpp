@@ -58,7 +58,6 @@ int main()
        for (int i = 0; i < totalLines; i++) {            
            
            if (!std::getline(file, linesArray[i], '\n')) {
-               std::cerr << "Error reading line from file." << endl;
                break; // Break out of the loop on error
            }
 
@@ -84,7 +83,7 @@ int main()
             }
             //Spawn threads
             threads[i] = thread(countFrequency, linesArray, currentLine, endLine, i);
-            cout << "Thread " << i << " spawned" << endl;
+            //cout << "Thread " << i << " spawned" << endl;
         
             //std::cout << "Start: " << currentLine << " ";
             //std::cout << "End: " << endLine << endl;
@@ -240,6 +239,8 @@ static void merge(KeyValue* array, int const left, int const mid, int const righ
 
 void countFrequency(string* linesArr, int start, int end, int threadNum) {
 
+    HashMap* threadmap = new HashMap();
+
     //Each thread traverse through the array from start to end indicies
     for (int i = start; i < end; i++) {
         // Check if value is in the map
@@ -250,38 +251,52 @@ void countFrequency(string* linesArr, int start, int end, int threadNum) {
             word = linesArr[i].substr(0, position);
             word = processString(word);
 
-            if (hashmap->contains(word))
+            if (threadmap->contains(word))
             {
                 // found, increase count
-                hashmap->increment(word);
+                threadmap->increment(word);
             }
             else
             {
                 // not found, add to the map
-                hashmap->put(word, 1);
+                threadmap->put(word, 1);
             }
 
             linesArr[i].erase(0, position + 1);
         }
         //The last word in the line doesn't have a space after it
         //And since each word is erased, the element of linesArr will just be the last word
-            word = linesArr[i];
-            word = processString(word);
-
-            if (hashmap->contains(word))
-            {
-                // found, increase count
-                hashmap->increment(word);
-            }
-            else
-            {
-                // not found, add to the map
-                hashmap->put(word, 1);
-            }
-
+        word = linesArr[i];
+        word = processString(word);
+        
+        if (threadmap->contains(word))
+        {
+            // found, increase count
+            threadmap->increment(word);
+        }
+        else
+        {
+            // not found, add to the map
+            threadmap->put(word, 1);
+        }
     }
 
-    cout << "Thread " << threadNum << " finished" << endl;
+    KeyValue* words = threadmap->getAll();
+    for (int i = 0; i < threadmap->getSize(); i++)
+    {
+        if (hashmap->contains(words[i].getKey()))
+        {
+            // found, add to map value
+            hashmap->addTo(words[i].getKey(), words[i].getValue());
+        }
+        else
+        {
+            // not found, add to the map
+            hashmap->put(words[i].getKey(), words[i].getValue());
+        }
+    }
+
+    //cout << "Thread " << threadNum << " finished" << endl;
 
 }
 

@@ -34,8 +34,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="test.txt" />
+    <Text Include="oneWord.txt" />
     <Text Include="big.txt" />
     <Text Include="bible.txt" />
+    <Text Include="test.txt" />
   </ItemGroup>
 </Project>
