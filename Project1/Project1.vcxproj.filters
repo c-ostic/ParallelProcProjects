@@ -37,6 +37,7 @@
     <Text Include="oneWord.txt" />
     <Text Include="big.txt" />
     <Text Include="bible.txt" />
-    <Text Include="test.txt" />
+    <Text Include="constitution.txt" />
+    <Text Include="verybig.txt" />
   </ItemGroup>
 </Project>

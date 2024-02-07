@@ -32,7 +32,7 @@ int main()
 
     std::ifstream file(filename);
 
-    std::ofstream outputFile("output.txt");
+    std::ofstream outputFile("bigOutput.txt");
 
     chrono::time_point<chrono::system_clock> startTotal, endTotal, startFile, endFile, startCount, endCount, startSort, endSort;
 
