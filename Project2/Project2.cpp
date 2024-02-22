@@ -4,9 +4,9 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <thread>
 #include <chrono>
 #include "HashMap.h"
+#include "omp.h"
 
 using namespace std;
 
@@ -28,11 +28,10 @@ int main()
     int numThreads;
     std::cout << "Enter the number of threads: ";
     std::cin >> numThreads;
-    std::thread* threads = new thread[numThreads];
 
     std::ifstream file(filename);
 
-    std::ofstream outputFile("bigOutput.txt");
+    std::ofstream outputFile(filename.substr(0, filename.length() - 4) + "Output.txt");
 
     chrono::time_point<chrono::system_clock> startTotal, endTotal, startFile, endFile, startCount, endCount, startSort, endSort;
 
@@ -67,35 +66,9 @@ int main()
        endFile = chrono::system_clock::now();
        startCount = chrono::system_clock::now();
 
-        // Calculate the number of lines each thread should process
-        // Handles uneven division and adds the extra lines evenly 
-        int linesPerThread = totalLines / numThreads;
-        int extraLines = totalLines % numThreads;
-        int currentLine = 0;
-
-        for (int i = 0; i < numThreads; i++)
-        {
-            int endLine = currentLine + linesPerThread;
-
-            if (i < extraLines)
-            {
-                endLine++;
-            }
-            //Spawn threads
-            threads[i] = thread(countFrequency, linesArray, currentLine, endLine, i);
-            //cout << "Thread " << i << " spawned" << endl;
-        
-            //std::cout << "Start: " << currentLine << " ";
-            //std::cout << "End: " << endLine << endl;
-
-            currentLine = endLine;
-        }
-
-        // Join threads
-        for (int i = 0; i < numThreads; ++i) {
-            threads[i].join();
-            //cout << "Thread " << i << " finished" << endl;
-        }
+       //Call count frequency function
+       int startLine = 0;
+       countFrequency(linesArray, startLine, totalLines, numThreads);
 
         endCount = chrono::system_clock::now();
         startSort = chrono::system_clock::now();
@@ -237,18 +210,42 @@ static void merge(KeyValue* array, int const left, int const mid, int const righ
     delete[] rightArray;
 }
 
-void countFrequency(string* linesArr, int start, int end, int threadNum) {
+void countFrequency(string* linesArr, int start, int end, int numThreads) {
 
-    HashMap* threadmap = new HashMap();
+    #pragma omp parallel num_threads(numThreads)
+    {
+        chrono::time_point<chrono::system_clock> startFor, endFor, startMerge, endMerge;
+        startFor = chrono::system_clock::now();
+        HashMap* threadmap = new HashMap();
 
-    //Each thread traverse through the array from start to end indicies
-    for (int i = start; i < end; i++) {
-        // Check if value is in the map
-        int position = 0;
-        string word;
-        while ((position = linesArr[i].find(' ')) != string::npos) {
+        //Each thread traverse through the array from start to end indicies
+        #pragma omp for
+        for (int i = start; i < end; i++) {
+            // Check if value is in the map
+            int position = 0;
+            string word;
+            while ((position = linesArr[i].find(' ')) != string::npos) {
 
-            word = linesArr[i].substr(0, position);
+                word = linesArr[i].substr(0, position);
+                word = processString(word);
+
+                if (threadmap->contains(word))
+                {
+                    // found, increase count
+                    threadmap->increment(word);
+                }
+                else
+                {
+                    // not found, add to the map
+                    threadmap->put(word, 1);
+                }
+
+                linesArr[i].erase(0, position + 1);
+            } 
+
+            //The last word in the line doesn't have a space after it
+            //And since each word is erased, the element of linesArr will just be the last word
+            word = linesArr[i];
             word = processString(word);
 
             if (threadmap->contains(word))
@@ -261,42 +258,40 @@ void countFrequency(string* linesArr, int start, int end, int threadNum) {
                 // not found, add to the map
                 threadmap->put(word, 1);
             }
+            endFor = chrono::system_clock::now();
+        } // end pragma for
 
-            linesArr[i].erase(0, position + 1);
-        }
-        //The last word in the line doesn't have a space after it
-        //And since each word is erased, the element of linesArr will just be the last word
-        word = linesArr[i];
-        word = processString(word);
-        
-        if (threadmap->contains(word))
+        #pragma omp critical 
         {
-            // found, increase count
-            threadmap->increment(word);
-        }
-        else
-        {
-            // not found, add to the map
-            threadmap->put(word, 1);
-        }
-    }
+            startMerge = chrono::system_clock::now();
+            KeyValue* words = threadmap->getAll();
+            for (int i = 0; i < threadmap->getSize(); i++)
+            {
+                if (hashmap->contains(words[i].getKey()))
+                {
+                    // found, add to map value
+                    hashmap->addTo(words[i].getKey(), words[i].getValue());
+                }
+                else
+                {
+                    // not found, add to the map
+                    hashmap->put(words[i].getKey(), words[i].getValue());
+                }
+            }
 
-    KeyValue* words = threadmap->getAll();
-    for (int i = 0; i < threadmap->getSize(); i++)
-    {
-        if (hashmap->contains(words[i].getKey()))
-        {
-            // found, add to map value
-            hashmap->addTo(words[i].getKey(), words[i].getValue());
-        }
-        else
-        {
-            // not found, add to the map
-            hashmap->put(words[i].getKey(), words[i].getValue());
-        }
-    }
+            endMerge = chrono::system_clock::now();
 
-    //cout << "Thread " << threadNum << " finished" << endl;
+        } // end critical pragma
+
+
+        chrono::duration<double> elapsedFor, elapsedMerge;
+        elapsedFor = endFor - startFor;
+        elapsedMerge = endMerge - startMerge;
+
+        cout << "Elapsed for loop: " << elapsedFor.count() << " " << omp_get_thread_num() << endl;
+        cout << "Elapsed merge: " << elapsedMerge.count() << " " << omp_get_thread_num() << endl;
+
+    } // end top pragma
 
 }
 
