@@ -1,12 +1,11 @@
 #pragma once
 #include <string>
-#include <atomic>
 
 class KeyValue
 {
 private:
 	std::string key;
-	std::atomic<int> value;
+	int value;
 
 public:
 	KeyValue();
