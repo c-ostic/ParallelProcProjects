@@ -19,15 +19,32 @@ void merge(KeyValue*, int, int, int);
 
 HashMap* hashmap = new HashMap();
 
-int main()
+int main(int argc, char *argv[])
 {
     std::string filename;
-    std::cout << "Enter the filename: ";
-    std::cin >> filename;
-
     int numThreads;
-    std::cout << "Enter the number of threads: ";
-    std::cin >> numThreads;
+
+    // C++ makes the first argument the name of the program, so two additional arguments make 3
+    if (argc != 3)
+    {
+        cout << "Program accepts two arguments: <filename> and <number of threads>" << endl;
+        return 1;
+    }
+
+    filename = argv[1];
+
+    try
+    {
+        numThreads = stoi(argv[2]);
+    }
+    catch (...)
+    {
+        cout << "Must provide an integer for the number of threads" << endl;
+        return 2;
+    }
+
+    cout << "Reading file " << filename << endl;
+    cout << "Processing with " << numThreads << " threads" << endl;
 
     std::ifstream file(filename);
 
@@ -288,8 +305,8 @@ void countFrequency(string* linesArr, int start, int end, int numThreads) {
         elapsedFor = endFor - startFor;
         elapsedMerge = endMerge - startMerge;
 
-        cout << "Elapsed for loop: " << elapsedFor.count() << " " << omp_get_thread_num() << endl;
-        cout << "Elapsed merge: " << elapsedMerge.count() << " " << omp_get_thread_num() << endl;
+        //cout << "Elapsed for loop: " << elapsedFor.count() << " " << omp_get_thread_num() << endl;
+        //cout << "Elapsed merge: " << elapsedMerge.count() << " " << omp_get_thread_num() << endl;
 
     } // end top pragma
 
