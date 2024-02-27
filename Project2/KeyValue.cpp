@@ -33,3 +33,18 @@ void KeyValue::increment()
 {
 	this->value++;
 }
+
+int KeyValue::compare(KeyValue other)
+{
+	// first compare by value
+	if (this->value != other.getValue())
+	{
+		return this->value - other.getValue();
+	}
+	// if values are equal, move to comparing by key
+	else
+	{
+		// compare in reverse from value so words are ordered alphabetically when sorting by *decreasing* values
+		return other.getKey().compare(this->key);
+	}
+}

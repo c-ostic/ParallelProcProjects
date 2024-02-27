@@ -18,4 +18,6 @@ public:
 	void setValue(int);
 
 	void increment();
+
+	int compare(KeyValue);
 };

@@ -193,7 +193,7 @@ static void merge(KeyValue* array, int const left, int const mid, int const righ
 
     // Merge the temp arrays back into array[left..right]
     while (indexOfSubArrayOne < subArrayOne && indexOfSubArrayTwo < subArrayTwo) {
-        if (leftArray[indexOfSubArrayOne].getValue() >= rightArray[indexOfSubArrayTwo].getValue()) {
+        if (leftArray[indexOfSubArrayOne].compare(rightArray[indexOfSubArrayTwo]) > 0) {
             array[indexOfMergedArray].setKey(leftArray[indexOfSubArrayOne].getKey());
             array[indexOfMergedArray].setValue(leftArray[indexOfSubArrayOne].getValue());
             indexOfSubArrayOne++;
