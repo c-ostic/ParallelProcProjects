@@ -236,7 +236,7 @@ void countFrequency(string* linesArr, int start, int end, int numThreads) {
         HashMap* threadmap = new HashMap();
 
         //Each thread traverse through the array from start to end indicies
-        #pragma omp for
+        #pragma omp for nowait
         for (int i = start; i < end; i++) {
             // Check if value is in the map
             int position = 0;
