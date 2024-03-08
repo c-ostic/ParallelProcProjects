@@ -19,20 +19,35 @@ void merge(KeyValue*, int, int, int);
 
 HashMap* hashmap = new HashMap();
 
-int main()
+int main(int argc, char* argv[])
 {
-    std::string filename;
-    std::cout << "Enter the filename: ";
-    std::cin >> filename;
-
+    string filename;
     int numThreads;
-    std::cout << "Enter the number of threads: ";
-    std::cin >> numThreads;
+
+    // C++ makes the first argument the name of the program, so two additional arguments make 3
+    if (argc != 3)
+    {
+        cout << "Program accepts two arguments: <filename> and <number of threads>" << endl;
+        return 1;
+    }
+
+    filename = argv[1];
+
+    try
+    {
+        numThreads = stoi(argv[2]);
+    }
+    catch (...)
+    {
+        cout << "Must provide an integer for the number of threads" << endl;
+        return 2;
+    }
+
     std::thread* threads = new thread[numThreads];
 
     std::ifstream file(filename);
 
-    std::ofstream outputFile("bigOutput.txt");
+    std::ofstream outputFile(filename.substr(0, filename.length() - 4) + "Output.txt");
 
     chrono::time_point<chrono::system_clock> startTotal, endTotal, startFile, endFile, startCount, endCount, startSort, endSort;
 
