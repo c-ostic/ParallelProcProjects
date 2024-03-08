@@ -1,5 +1,4 @@
 #pragma once
-#include <shared_mutex>
 #include "KeyValue.h"
 
 class HashMap
@@ -14,8 +13,6 @@ private:
 	void checkResize();
 	int hash(std::string);
 	int find(std::string);
-
-	std::shared_mutex mutex;
 
 public:
 	HashMap();

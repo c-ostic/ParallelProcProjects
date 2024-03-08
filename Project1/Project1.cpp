@@ -6,6 +6,7 @@
 #include <string>
 #include <thread>
 #include <chrono>
+#include <mutex>
 #include "HashMap.h"
 
 using namespace std;
@@ -18,6 +19,7 @@ void mergeSort(KeyValue*, int, int);
 void merge(KeyValue*, int, int, int);
 
 HashMap* hashmap = new HashMap();
+mutex mtx;
 
 int main(int argc, char* argv[])
 {
@@ -295,8 +297,9 @@ void countFrequency(string* linesArr, int start, int end, int threadNum) {
             threadmap->put(word, 1);
         }
     }
-
+   
     KeyValue* words = threadmap->getAll();
+    mtx.lock();
     for (int i = 0; i < threadmap->getSize(); i++)
     {
         if (hashmap->contains(words[i].getKey()))
@@ -310,6 +313,7 @@ void countFrequency(string* linesArr, int start, int end, int threadNum) {
             hashmap->put(words[i].getKey(), words[i].getValue());
         }
     }
+    mtx.unlock();
 
     //cout << "Thread " << threadNum << " finished" << endl;
 

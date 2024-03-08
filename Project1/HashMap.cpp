@@ -53,8 +53,6 @@ void HashMap::checkResize()
 	// Only resize if the load factor has been reached or exceeded
 	if ((float)size / capacity > LOAD_FACTOR)
 	{
-		mutex.lock();
-
 		int oldCapacity = capacity;
 
 		// Double capacity
@@ -84,8 +82,6 @@ void HashMap::checkResize()
 		}
 
 		delete[] oldArray;
-
-		mutex.unlock();
 	}
 }
 
@@ -130,7 +126,6 @@ void HashMap::put(std::string key, int value)
 		return;
 	}
 
-	mutex.lock();
 	int index = find(key);
 
 	// If the index is positive, the key is already in the array, so just increment
@@ -149,7 +144,6 @@ void HashMap::put(std::string key, int value)
 		size++;
 
 	}
-	mutex.unlock();
 
 	checkResize();
 }
@@ -160,15 +154,11 @@ void HashMap::put(std::string key, int value)
 */
 int HashMap::get(std::string key)
 {
-	mutex.lock_shared();
 	int index = find(key);
-	mutex.unlock_shared();
 
 	if (index >= 0)
 	{
-		mutex.lock_shared();
 		int val = array[index].getValue();
-		mutex.unlock_shared();
 
 		return val;
 	}
@@ -184,17 +174,14 @@ int HashMap::get(std::string key)
 */
 void HashMap::increment(std::string key)
 {
-	mutex.lock_shared();
 	int index = find(key);
 
 	if (index >= 0)
 	{
 		array[index].increment();
-		mutex.unlock_shared();
 	}
 	else
 	{
-		mutex.unlock_shared();
 		put(key, 1);
 	}
 }
@@ -204,9 +191,7 @@ void HashMap::increment(std::string key)
 */
 bool HashMap::contains(std::string key)
 {
-	mutex.lock_shared();
 	int index = find(key);
-	mutex.unlock_shared();
 
 	return index >= 0;
 }
@@ -217,17 +202,14 @@ bool HashMap::contains(std::string key)
 */
 void HashMap::addTo(std::string key, int value)
 {
-	mutex.lock_shared();
 	int index = find(key);
 
 	if (index >= 0)
 	{
 		array[index].setValue(array[index].getValue() + value);
-		mutex.unlock_shared();
 	}
 	else
 	{
-		mutex.unlock_shared();
 		put(key, value);
 	}
 }
