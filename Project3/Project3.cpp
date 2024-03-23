@@ -6,6 +6,8 @@
 #include <string>
 #include <mpi.h>
 
+using namespace std;
+
 bool readFile(std::string filename, char*** data, int* rows, int* columns);
 
 int main()
@@ -23,34 +25,62 @@ int main()
         return 1;
     }
 
-    std::cout << "Input: " << inputRows << " " << inputColumns << std::endl;
-    for (int i = 0; i < inputRows; i++)
-    {
-        for (int j = 0; j < inputColumns; j++)
-        {
-            std::cout << input[i][j];
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
+    //std::cout << "Input: " << inputRows << " " << inputColumns << std::endl;
+    //for (int i = 0; i < inputRows; i++)
+    //{
+    //    for (int j = 0; j < inputColumns; j++)
+    //    {
+    //        std::cout << input[i][j];
+    //    }
+    //    std::cout << std::endl;
+    //}
+    //std::cout << std::endl;
 
-    std::cout << "Pattern: " << patternRows << " " << patternColumns << std::endl;
-    for (int i = 0; i < patternRows; i++)
-    {
-        for (int j = 0; j < patternColumns; j++)
-        {
-            std::cout << pattern[i][j];
-        }
-        std::cout << std::endl;
+    //std::cout << "Pattern: " << patternRows << " " << patternColumns << std::endl;
+    //for (int i = 0; i < patternRows; i++)
+    //{
+    //    for (int j = 0; j < patternColumns; j++)
+    //    {
+    //        std::cout << pattern[i][j];
+    //    }
+    //    std::cout << std::endl;
+    //}
+
+    //Get the number of processes
+    int world_size;
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+
+    //Get the rank of the process
+    int world_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+
+    int start;
+    int end;
+    int total_chars = inputRows * inputColumns;
+    int per_rank_chars = total_chars / world_size;
+    int leftover_chars = total_chars % world_size;
+
+    if (world_rank < leftover_chars) {
+        start = world_rank * (per_rank_chars + 1);
+        end = start + per_rank_chars;
+    }
+    else {
+        start = world_rank * per_rank_chars + leftover_chars;
+        end = start + per_rank_chars - 1;
     }
 
     // create structure that holds coordinate pairs
     // inputRows * inputColumns is the maximum amount of possible patterns
-    int** coords = new int* [inputRows * inputColumns];
+    int coords_size = (end - start + 1) * 2;
+    int* coords = new int [coords_size];
+
+    for (int i = 0; i < coords_size; i++) {
+        coords[i] = -1;
+    }
     int count = 0;
 
     // loop through every space in input
-    for (int k = 0; k < inputRows * inputColumns; k++)
+    for (int k = start; k <= end; k++)
     {
         int i = k / inputColumns;
         int j = k % inputColumns;
@@ -74,21 +104,30 @@ int main()
         // if the pattern is found, add it to the list
         if (patternFound)
         {
-            int* pair = new int[2];
-            pair[0] = i + 1;
-            pair[1] = j + 1;
-            coords[count] = pair;
-            count++;
+            coords[count] = i;
+            coords[count + 1] = j;
+            count += 2;
         }
     }
 
-    // Print the pattern locations
-    std::cout << std::endl;
-    std::cout << "Found patterns: " << count << std::endl;
-    for (int i = 0; i < count; i++)
-    {
-        std::cout << coords[i][0] << ", " << coords[i][1] << std::endl;
+    int* all_coords = NULL;
+
+    if (world_rank == 0) {
+        all_coords = (int*) malloc(sizeof(int) * total_chars * 2);
     }
+
+    MPI_Gather(coords, coords_size, MPI_INT, all_coords, coords_size, MPI_INT, 0, MPI_COMM_WORLD);
+
+    if (world_rank == 0) {
+        std::ofstream outputFile(/* filename.substr(0, filename.length() - 4) + */  "Output.txt");
+        for (int i = 0; i < total_chars * 2; i += 2)
+        {
+            if (all_coords[i] != -1) {
+                outputFile << all_coords[i] << ", " << all_coords[i + 1] << std::endl;
+            }
+        }
+    }
+
 
     MPI_Finalize();
 }
