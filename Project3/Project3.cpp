@@ -10,18 +10,32 @@ using namespace std;
 
 bool readFile(std::string filename, char*** data, int* rows, int* columns);
 
-int main()
+int main(int argc, char* argv[])
 {
     MPI_Init(NULL, NULL);
+
+    std::string inputFilename, patternFilename;
+
+    // C++ makes the first argument the name of the program, so two additional arguments make 3
+    if (argc != 3)
+    {
+        cout << "Program accepts two arguments: <input filename> and <pattern filename>" << endl;
+        MPI_Finalize();
+        return 1;
+    }
+
+    inputFilename = argv[1];
+    patternFilename = argv[2];
 
     // read in both files
     char** input = nullptr;
     char** pattern = nullptr;
     int inputRows, inputColumns, patternRows, patternColumns;
 
-    if (!readFile("input1.txt", &input, &inputRows, &inputColumns) ||
-        !readFile("pattern1.txt", &pattern, &patternRows, &patternColumns))
+    if (!readFile(inputFilename, &input, &inputRows, &inputColumns) ||
+        !readFile(patternFilename, &pattern, &patternRows, &patternColumns))
     {
+        MPI_Finalize();
         return 1;
     }
 
@@ -119,7 +133,7 @@ int main()
     MPI_Gather(coords, coords_size, MPI_INT, all_coords, coords_size, MPI_INT, 0, MPI_COMM_WORLD);
 
     if (world_rank == 0) {
-        std::ofstream outputFile(/* filename.substr(0, filename.length() - 4) + */  "Output.txt");
+        std::ofstream outputFile(inputFilename.substr(0, inputFilename.length() - 4) +  "Output.txt");
         for (int i = 0; i < total_chars * 2; i += 2)
         {
             if (all_coords[i] != -1) {
