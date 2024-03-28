@@ -12,7 +12,7 @@ set mpiExe="C:\Program Files\Microsoft MPI\Bin\mpiexec.exe"
 rem Set input pattern and thread count data
 set inputs=input1.txt input2.txt 
 set patterns=pattern1.txt pattern2.txt
-set threadCounts=1 2 4
+set threadCounts=1 2 4 8 12 16 24
 
 rem Clear the output file
 echo/ > batchOutput.txt

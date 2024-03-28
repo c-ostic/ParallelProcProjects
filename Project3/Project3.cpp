@@ -104,6 +104,27 @@ int main(int argc, char* argv[])
     }
     int count = 0;
 
+    // Rank 0 needs to calculate how much will be returned from each other rank
+    int* rankCoords = new int[world_size];
+    int* displacements = new int[world_size];
+    rankCoords[0] = coords_size;
+    displacements[0] = 0;
+    if (world_rank == 0) {
+        for (int rank = 1; rank < world_size; rank++) {
+            int rankStart, rankEnd;
+            if (rank < leftover_chars) {
+                rankStart = rank * (per_rank_chars + 1);
+                rankEnd = rankStart + per_rank_chars;
+            }
+            else {
+                rankStart = rank * per_rank_chars + leftover_chars;
+                rankEnd = rankStart + per_rank_chars - 1;
+            }
+            rankCoords[rank] = (rankEnd - rankStart + 1) * 2;
+            displacements[rank] = displacements[rank - 1] + rankCoords[rank - 1];
+        }
+    }
+
     // loop through every space in input
     for (int k = start; k <= end; k++)
     {
@@ -144,7 +165,7 @@ int main(int argc, char* argv[])
         all_coords = (int*) malloc(sizeof(int) * total_chars * 2);
     }
 
-    MPI_Gather(coords, coords_size, MPI_INT, all_coords, coords_size, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Gatherv(coords, coords_size, MPI_INT, all_coords, rankCoords, displacements, MPI_INT, 0, MPI_COMM_WORLD);
 
     if (world_rank == 0) {
         std::ofstream outputFile(inputFilename.substr(0, inputFilename.length() - 4) +  "Output.txt");
