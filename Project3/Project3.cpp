@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <chrono>
 #include <string>
 #include <mpi.h>
 
@@ -24,6 +25,10 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    chrono::time_point<chrono::system_clock> startTotal, endTotal, startFile, endFile, startCount, endCount, startWrite, endWrite;
+
+    startTotal = chrono::system_clock::now();
+
     inputFilename = argv[1];
     patternFilename = argv[2];
 
@@ -32,12 +37,16 @@ int main(int argc, char* argv[])
     char** pattern = nullptr;
     int inputRows, inputColumns, patternRows, patternColumns;
 
+    startFile = chrono::system_clock::now();
+
     if (!readFile(inputFilename, &input, &inputRows, &inputColumns) ||
         !readFile(patternFilename, &pattern, &patternRows, &patternColumns))
     {
         MPI_Finalize();
         return 1;
     }
+
+    endFile = chrono::system_clock::now();
 
     //std::cout << "Input: " << inputRows << " " << inputColumns << std::endl;
     //for (int i = 0; i < inputRows; i++)
@@ -59,6 +68,8 @@ int main(int argc, char* argv[])
     //    }
     //    std::cout << std::endl;
     //}
+
+    startCount = chrono::system_clock::now();
 
     //Get the number of processes
     int world_size;
@@ -124,6 +135,9 @@ int main(int argc, char* argv[])
         }
     }
 
+    endCount = chrono::system_clock::now();
+    startWrite = chrono::system_clock::now();
+
     int* all_coords = NULL;
 
     if (world_rank == 0) {
@@ -142,6 +156,36 @@ int main(int argc, char* argv[])
         }
     }
 
+    endWrite = chrono::system_clock::now();
+    endTotal = chrono::system_clock::now();
+
+    chrono::duration<double> elapsedTotal, elapsedFile, elapsedCount, elapsedWrite;
+    elapsedTotal = endTotal - startTotal;
+    elapsedFile = endFile - startFile;
+    elapsedCount = endCount - startCount;
+    elapsedWrite = endWrite - startWrite;
+
+    //cout << "Elapsed time file reading: " << elapsedFile.count() << endl;
+    //cout << "Elapsed time pattern count: " << elapsedCount.count() << endl;
+    //cout << "Elapsed time gather and write to file: " << elapsedWrite.count() << endl;
+    //cout << "Elapsed time total: " << elapsedTotal.count() << endl;
+
+    // Each MPI thread will have separate elapsedTime counts
+    // Use MPI_Reduce to sum all of the totals to one total
+    double allThreadsFile, allThreadsCount, allThreadsWrite, allThreadsTotal;
+
+    MPI_Reduce(&elapsedFile, &allThreadsFile, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&elapsedCount, &allThreadsCount, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&elapsedWrite, &allThreadsWrite, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&elapsedTotal, &allThreadsTotal, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    if (world_rank == 0) {
+        // Print total runtimes from root process
+        std::cout << "Elapsed time file reading: " << allThreadsFile << std::endl;
+        std::cout << "Elapsed time pattern count: " << allThreadsCount << std::endl;
+        std::cout << "Elapsed time gather and write to file: " << allThreadsWrite << std::endl;
+        std::cout << "Elapsed time total: " << allThreadsTotal << std::endl;
+    }
 
     MPI_Finalize();
 }
