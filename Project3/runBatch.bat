@@ -39,6 +39,7 @@ for /L %%A in (1,1,%i%) do (
 		echo Threads: %%t
 		echo Threads: %%t >> batchOutput.txt
 		%mpiExe% -n %%t %program% !Q[%%A]! !P[%%A]! >> batchOutput.txt
+		python metrics.py !Q[%%A]! !P[%%A]! %%t >> batchOutput.txt
 		echo/ >> batchOutput.txt
 	)
 	
