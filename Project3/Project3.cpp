@@ -137,7 +137,7 @@ int main(int argc, char* argv[])
         // check if pattern is at this position
         bool patternFound = false;
 
-        for (int i = 0; i < 4 && !patternFound; i++)
+        for (int r = 0; r < 4 && !patternFound; r++)
         {
             patternFound = checkForPattern(input, pattern, inputRows, inputColumns, patternRows, patternColumns, i, j);
             pattern = rotate(pattern, &patternRows, &patternColumns);
@@ -145,7 +145,7 @@ int main(int argc, char* argv[])
         
         pattern = mirror(pattern, &patternRows, &patternColumns);
         
-        for (int i = 0; i < 4 && !patternFound; i++)
+        for (int r = 0; r < 4 && !patternFound; r++)
         {
             patternFound = checkForPattern(input, pattern, inputRows, inputColumns, patternRows, patternColumns, i, j);
             pattern = rotate(pattern, &patternRows, &patternColumns);
@@ -274,7 +274,7 @@ char** rotate(char** arr, int* rows, int* columns)
         rotated[x] = new char[*rows];
         for (int j = *rows - 1, y = 0; j >= 0; j--, y++)
         {
-            rotated[x][y] = arr[i][j];
+            rotated[x][y] = arr[j][i];
         }
     }
 
