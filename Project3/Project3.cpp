@@ -10,6 +10,9 @@
 using namespace std;
 
 bool readFile(std::string filename, char*** data, int* rows, int* columns);
+char** rotate(char** arr, int* rows, int* columns);
+char** mirror(char** arr, int* rows, int* columns);
+bool checkForPattern(char** input, char** pattern, int inputRows, int inputColumns, int patternRows, int patternColumns, int i, int j);
 
 int main(int argc, char* argv[])
 {
@@ -132,19 +135,20 @@ int main(int argc, char* argv[])
         int j = k % inputColumns;
 
         // check if pattern is at this position
-        bool patternFound = true;
+        bool patternFound = false;
 
-        // loop through each character in the pattern, stop as soon as pattern is out of bounds or it doesn't match
-        for (int currentRow = 0; currentRow < patternRows && patternFound; currentRow++)
+        for (int r = 0; r < 4 && !patternFound; r++)
         {
-            for (int currentColumn = 0; currentColumn < patternColumns && patternFound; currentColumn++)
-            {
-                if (i + currentRow >= inputRows || j + currentColumn >= inputColumns || // out of bounds
-                    input[i + currentRow][j + currentColumn] != pattern[currentRow][currentColumn]) // doesn't match pattern
-                {
-                    patternFound = false;
-                }
-            }
+            patternFound = checkForPattern(input, pattern, inputRows, inputColumns, patternRows, patternColumns, i, j);
+            pattern = rotate(pattern, &patternRows, &patternColumns);
+        }
+        
+        pattern = mirror(pattern, &patternRows, &patternColumns);
+        
+        for (int r = 0; r < 4 && !patternFound; r++)
+        {
+            patternFound = checkForPattern(input, pattern, inputRows, inputColumns, patternRows, patternColumns, i, j);
+            pattern = rotate(pattern, &patternRows, &patternColumns);
         }
 
         // if the pattern is found, add it to the list
@@ -195,10 +199,10 @@ int main(int argc, char* argv[])
     // Use MPI_Reduce to sum all of the totals to one total
     double allThreadsFile, allThreadsCount, allThreadsWrite, allThreadsTotal;
 
-    MPI_Reduce(&elapsedFile, &allThreadsFile, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&elapsedCount, &allThreadsCount, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&elapsedWrite, &allThreadsWrite, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&elapsedTotal, &allThreadsTotal, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&elapsedFile, &allThreadsFile, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&elapsedCount, &allThreadsCount, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&elapsedWrite, &allThreadsWrite, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&elapsedTotal, &allThreadsTotal, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
 
     if (world_rank == 0) {
         // Print total runtimes from root process
@@ -259,4 +263,60 @@ bool readFile(std::string filename, char*** data, int* rows, int* columns)
         std::cout << filename << " not opened" << std::endl;
         return false;
     }
+}
+
+char** rotate(char** arr, int* rows, int* columns)
+{
+    char** rotated = new char*[*columns];
+
+    for (int i = 0, x = 0; i < *columns; i++, x++)
+    {
+        rotated[x] = new char[*rows];
+        for (int j = *rows - 1, y = 0; j >= 0; j--, y++)
+        {
+            rotated[x][y] = arr[j][i];
+        }
+    }
+
+    int temp = *rows;
+    *rows = *columns;
+    *columns = temp;
+
+    return rotated;
+}
+
+char** mirror(char** arr, int* rows, int* columns)
+{
+    char** mirrored = new char* [*rows];
+
+    for (int i = 0, x = 0; i < *rows; i++, x++)
+    {
+        mirrored[x] = new char[*columns];
+        for (int j = *columns - 1, y = 0; j >= 0; j--, y++)
+        {
+            mirrored[x][y] = arr[i][j];
+        }
+    }
+
+    return mirrored;
+}
+
+bool checkForPattern(char** input, char** pattern, int inputRows, int inputColumns, int patternRows, int patternColumns, int i, int j)
+{
+    bool patternFound = true;
+
+    // loop through each character in the pattern, stop as soon as pattern is out of bounds or it doesn't match
+    for (int currentRow = 0; currentRow < patternRows && patternFound; currentRow++)
+    {
+        for (int currentColumn = 0; currentColumn < patternColumns && patternFound; currentColumn++)
+        {
+            if (i + currentRow >= inputRows || j + currentColumn >= inputColumns || // out of bounds
+                (input[i + currentRow][j + currentColumn] != pattern[currentRow][currentColumn] && pattern[currentRow][currentColumn] != '*')) // doesn't match pattern
+            {
+                patternFound = false;
+            }
+        }
+    }
+
+    return patternFound;
 }
