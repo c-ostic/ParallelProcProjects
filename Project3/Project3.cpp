@@ -84,7 +84,8 @@ int main(int argc, char* argv[])
 
     int start;
     int end;
-    int total_chars = inputRows * inputColumns;
+    int patternMaxDimension = patternRows > patternColumns ? patternRows : patternColumns;
+    int total_chars = (inputRows + patternMaxDimension - 1) * (inputColumns + patternMaxDimension - 1);
     int per_rank_chars = total_chars / world_size;
     int leftover_chars = total_chars % world_size;
 
@@ -131,8 +132,8 @@ int main(int argc, char* argv[])
     // loop through every space in input
     for (int k = start; k <= end; k++)
     {
-        int i = k / inputColumns;
-        int j = k % inputColumns;
+        int i = k / (inputColumns + patternMaxDimension - 1) - (patternMaxDimension - 1);
+        int j = k % (inputColumns + patternMaxDimension - 1) - (patternMaxDimension - 1);
 
         // check if pattern is at this position
         bool patternFound = false;
@@ -176,7 +177,7 @@ int main(int argc, char* argv[])
         for (int i = 0; i < total_chars * 2; i += 2)
         {
             if (all_coords[i] != -1) {
-                outputFile << all_coords[i] << ", " << all_coords[i + 1] << std::endl;
+                outputFile << all_coords[i + 1] + 1 << ", " << all_coords[i] + 1 << std::endl;
             }
         }
     }
@@ -310,8 +311,9 @@ bool checkForPattern(char** input, char** pattern, int inputRows, int inputColum
     {
         for (int currentColumn = 0; currentColumn < patternColumns && patternFound; currentColumn++)
         {
-            if (i + currentRow >= inputRows || j + currentColumn >= inputColumns || // out of bounds
-                (input[i + currentRow][j + currentColumn] != pattern[currentRow][currentColumn] && pattern[currentRow][currentColumn] != '*')) // doesn't match pattern
+            if (pattern[currentRow][currentColumn] != '*' && 
+                (i + currentRow < 0 || i + currentRow >= inputRows || j + currentColumn < 0 || j + currentColumn >= inputColumns || // out of bounds
+                input[i + currentRow][j + currentColumn] != pattern[currentRow][currentColumn])) // doesn't match pattern
             {
                 patternFound = false;
             }
