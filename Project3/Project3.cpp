@@ -82,6 +82,12 @@ int main(int argc, char* argv[])
     int world_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
+    /*
+    Distribute workload among MPI processes 
+    Each rank has access to the whole input file, but may only check a portion of it
+    Each portion is calculated based on the total number of characters
+    Equally distributes leftover characters if needed
+    */
     int start;
     int end;
     int patternMaxDimension = patternRows > patternColumns ? patternRows : patternColumns;
@@ -103,8 +109,11 @@ int main(int argc, char* argv[])
     int coords_size = (end - start + 1) * 2;
     int* coords = new int [coords_size];
 
+    //Since our valid coordinates can be negative now, switch from -1 to MAX integer
+    //Uses bitwise manipulation to calculate max integer, without using limits.h
+    int max_int = ~(1 << 31);
     for (int i = 0; i < coords_size; i++) {
-        coords[i] = -1;
+        coords[i] = max_int;
     }
     int count = 0;
 
@@ -138,6 +147,13 @@ int main(int argc, char* argv[])
         // check if pattern is at this position
         bool patternFound = false;
 
+        /*
+        Loops four times because:
+        1. First rotate is 90 degrees
+        2. Second rotate is 180 degrees
+        3. Third rotate is 90 degrees counter-clockwise
+        4. Fourth rotate is back to original pattern
+        */
         for (int r = 0; r < 4 && !patternFound; r++)
         {
             patternFound = checkForPattern(input, pattern, inputRows, inputColumns, patternRows, patternColumns, i, j);
@@ -146,6 +162,7 @@ int main(int argc, char* argv[])
         
         pattern = mirror(pattern, &patternRows, &patternColumns);
         
+        // Similar to above, runs four times to get all versions of the pattern mirrored
         for (int r = 0; r < 4 && !patternFound; r++)
         {
             patternFound = checkForPattern(input, pattern, inputRows, inputColumns, patternRows, patternColumns, i, j);
@@ -170,13 +187,16 @@ int main(int argc, char* argv[])
         all_coords = (int*) malloc(sizeof(int) * total_chars * 2);
     }
 
+    //Uses MPI_Gatherv rather than MPI_Gather because each rank can send a different amount of data
     MPI_Gatherv(coords, coords_size, MPI_INT, all_coords, rankCoords, displacements, MPI_INT, 0, MPI_COMM_WORLD);
 
+    //After gathering, rank 0 writes all coords to output file
     if (world_rank == 0) {
         std::ofstream outputFile(inputFilename.substr(0, inputFilename.length() - 4) +  "Output.txt");
         for (int i = 0; i < total_chars * 2; i += 2)
         {
-            if (all_coords[i] != -1) {
+            //Check that the coords are less than the MAX integer
+            if (all_coords[i] < max_int) {
                 outputFile << all_coords[i + 1] + 1 << ", " << all_coords[i] + 1 << std::endl;
             }
         }
@@ -191,15 +211,11 @@ int main(int argc, char* argv[])
     elapsedCount = endCount - startCount;
     elapsedWrite = endWrite - startWrite;
 
-    //cout << "Elapsed time file reading: " << elapsedFile.count() << endl;
-    //cout << "Elapsed time pattern count: " << elapsedCount.count() << endl;
-    //cout << "Elapsed time gather and write to file: " << elapsedWrite.count() << endl;
-    //cout << "Elapsed time total: " << elapsedTotal.count() << endl;
-
     // Each MPI thread will have separate elapsedTime counts
-    // Use MPI_Reduce to sum all of the totals to one total
+    // Use MPI_Reduce to calculate the max all of the totals
     double allThreadsFile, allThreadsCount, allThreadsWrite, allThreadsTotal;
 
+    //Uses MPI_MAX because each thread runs simultaneously, so we want the max rather than the sum 
     MPI_Reduce(&elapsedFile, &allThreadsFile, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     MPI_Reduce(&elapsedCount, &allThreadsCount, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     MPI_Reduce(&elapsedWrite, &allThreadsWrite, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
@@ -266,6 +282,12 @@ bool readFile(std::string filename, char*** data, int* rows, int* columns)
     }
 }
 
+/*
+Rotates matrix 90 degrees clock-wise
+A new rotated array is constructed by traversing the original array by columns first, then by rows going backwards. 
+Then, the pointers to the number of rows and columns are used to switch their values
+Rotating an X by Y matrix results in a Y by X matrix
+*/
 char** rotate(char** arr, int* rows, int* columns)
 {
     char** rotated = new char*[*columns];
@@ -286,6 +308,11 @@ char** rotate(char** arr, int* rows, int* columns)
     return rotated;
 }
 
+/*
+Mirrors matrix along the y-axis
+The new mirrored array is constructed by traversing the original array normally by rows first,
+then backwards through the columns
+*/
 char** mirror(char** arr, int* rows, int* columns)
 {
     char** mirrored = new char* [*rows];
@@ -302,6 +329,10 @@ char** mirror(char** arr, int* rows, int* columns)
     return mirrored;
 }
 
+/*
+Checks for the pattern within the input file
+Ignores wildcard character '*' and returns true or false if pattern is found or not
+*/
 bool checkForPattern(char** input, char** pattern, int inputRows, int inputColumns, int patternRows, int patternColumns, int i, int j)
 {
     bool patternFound = true;
