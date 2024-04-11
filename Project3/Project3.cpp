@@ -197,6 +197,9 @@ int main(int argc, char* argv[])
         {
             //Check that the coords are less than the MAX integer
             if (all_coords[i] < max_int) {
+                if (all_coords[i] < 0) all_coords[i] = 0;
+                if (all_coords[i + 1] < 0) all_coords[i + 1] = 0;
+
                 outputFile << all_coords[i + 1] + 1 << ", " << all_coords[i] + 1 << std::endl;
             }
         }
