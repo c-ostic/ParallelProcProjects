@@ -12,14 +12,15 @@ __device__ bool checkForPattern(char* input, char* pattern, int inputRows, int i
 
 // CUDA kernel for pattern matching
 __global__ void patternMatchingKernel(char* input, int inputRows, int inputColumns, char* pattern, int patternRows, int patternColumns, int* resultCoords, int maxCoordsSize) {
+    int stride = blockDim.x * gridDim.x;
     int k = blockIdx.x * blockDim.x + threadIdx.x;
 
-    int i = k / inputColumns;
-    int j = k % inputColumns;
-
-    // Perform pattern matching using the checkForPattern function
-    if (i < inputRows && j < inputColumns)
+    while (k < inputRows * inputColumns)
     {
+        int i = k / inputColumns;
+        int j = k % inputColumns;
+
+        // Perform pattern matching using the checkForPattern function
         bool patternFound = checkForPattern(input, pattern, inputRows, inputColumns, patternRows, patternColumns, i, j);
 
         // Calculate index for resultCoords array
@@ -34,6 +35,8 @@ __global__ void patternMatchingKernel(char* input, int inputRows, int inputColum
             resultCoords[index * 2] = -1;
             resultCoords[index * 2 + 1] = -1;
         }
+
+        k += stride;
     }
 }
 
@@ -83,7 +86,7 @@ int main(int argc, char* argv[]) {
     cudaMemcpy(d_pattern, pattern, patternRows * patternColumns * sizeof(char), cudaMemcpyHostToDevice);
 
     // Launch CUDA kernel for pattern matching
-    patternMatchingKernel << < 1, 32 >> > (d_input, inputRows, inputColumns, d_pattern, patternRows, patternColumns, d_resultCoords, maxCoordsSize);
+    patternMatchingKernel << < 2, 64 >> > (d_input, inputRows, inputColumns, d_pattern, patternRows, patternColumns, d_resultCoords, maxCoordsSize);
 
     // Copy result coordinates from device to host
     int* resultCoords = new int[maxCoordsSize];
