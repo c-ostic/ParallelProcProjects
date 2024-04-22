@@ -43,16 +43,28 @@ __global__ void patternMatchingKernel(char* input, int inputRows, int inputColum
 int main(int argc, char* argv[]) {
 
     std::string inputFilename, patternFilename;
+    int numBlocks = 1, numThreads = 1;
 
-    // C++ makes the first argument the name of the program, so two additional arguments make 3
-    if (argc != 3)
+    // C++ makes the first argument the name of the program, so 4 additional arguments make 5
+    if (argc != 5)
     {
-        cout << "Program accepts two arguments: <input filename> and <pattern filename>" << endl;
+        cout << "Program accepts four arguments: <input filename>, <pattern filename>, <num blocks>, <num threads>" << endl;
         return 1;
     }
 
     inputFilename = argv[1];
     patternFilename = argv[2];
+
+    try
+    {
+        numBlocks = stoi(argv[3]);
+        numThreads = stoi(argv[4]);
+    }
+    catch (...)
+    {
+        cout << "Must provide integers for the number of blocks and threads" << endl;
+        return 1;
+    }
 
     // read in both files
     char* input = nullptr;
@@ -62,17 +74,19 @@ int main(int argc, char* argv[]) {
     if (!readFile(inputFilename, &input, &inputRows, &inputColumns) ||
         !readFile(patternFilename, &pattern, &patternRows, &patternColumns))
     {
+        cout << "Failed to read files" << endl;
         return 1;
     }
 
-    for (int i = 0; i < inputColumns * inputRows; i++)
-    {
-        cout << input[i];
-    }
+    // Print arguments
+    cout << "Input File: " << inputFilename << endl;
+    cout << "Patter File: " << patternFilename << endl;
+    cout << "Number of Blocks: " << numBlocks << endl;
+    cout << "Number of Threads: " << numThreads << endl;
 
-    int maxCoordsSize = inputRows * inputColumns * 2;
 
     // Allocate device memory for input, pattern, and result coordinates
+    int maxCoordsSize = inputRows * inputColumns * 2;
     char* d_input;
     char* d_pattern;
     int* d_resultCoords;
@@ -86,7 +100,7 @@ int main(int argc, char* argv[]) {
     cudaMemcpy(d_pattern, pattern, patternRows * patternColumns * sizeof(char), cudaMemcpyHostToDevice);
 
     // Launch CUDA kernel for pattern matching
-    patternMatchingKernel << < 2, 64 >> > (d_input, inputRows, inputColumns, d_pattern, patternRows, patternColumns, d_resultCoords, maxCoordsSize);
+    patternMatchingKernel << < numBlocks, numThreads >> > (d_input, inputRows, inputColumns, d_pattern, patternRows, patternColumns, d_resultCoords, maxCoordsSize);
 
     // Copy result coordinates from device to host
     int* resultCoords = new int[maxCoordsSize];
@@ -97,10 +111,11 @@ int main(int argc, char* argv[]) {
     cudaFree(d_pattern);
     cudaFree(d_resultCoords);
 
+    // Print results (to console for now)
     for (int i = 0; i < maxCoordsSize; i += 2)
     {
-        //if (resultCoords[i] >= 0)
-        cout << resultCoords[i] << ", " << resultCoords[i + 1] << endl;
+        if (resultCoords[i] >= 0)
+            cout << resultCoords[i] << ", " << resultCoords[i + 1] << endl;
     }
 
     delete[] resultCoords;
