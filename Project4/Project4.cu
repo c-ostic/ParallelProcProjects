@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <chrono>
 #include <cuda_runtime.h>
 #include "device_launch_parameters.h"
 
@@ -66,10 +67,18 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    chrono::time_point<chrono::system_clock> startTotal, endTotal, startFile, endFile, startCount, endCount, startWrite, endWrite;
+
+    startTotal = chrono::system_clock::now();
+
+
     // read in both files
+    startFile = chrono::system_clock::now();
+
     char* input = nullptr;
     char* pattern = nullptr;
     int inputRows, inputColumns, patternRows, patternColumns;
+
 
     if (!readFile(inputFilename, &input, &inputRows, &inputColumns) ||
         !readFile(patternFilename, &pattern, &patternRows, &patternColumns))
@@ -78,14 +87,18 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    endFile = chrono::system_clock::now();
+
     // Print arguments
     cout << "Input File: " << inputFilename << endl;
-    cout << "Patter File: " << patternFilename << endl;
+    cout << "Pattern File: " << patternFilename << endl;
     cout << "Number of Blocks: " << numBlocks << endl;
     cout << "Number of Threads: " << numThreads << endl;
 
 
     // Allocate device memory for input, pattern, and result coordinates
+    startCount = chrono::system_clock::now();
+
     int maxCoordsSize = inputRows * inputColumns * 2;
     char* d_input;
     char* d_pattern;
@@ -111,13 +124,34 @@ int main(int argc, char* argv[]) {
     cudaFree(d_pattern);
     cudaFree(d_resultCoords);
 
+    endCount = chrono::system_clock::now();
+
+    startWrite = chrono::system_clock::now();
+
+    std::ofstream outputFile(inputFilename.substr(0, inputFilename.length() - 4) + "Output.txt");
     // Print results (to console for now)
     for (int i = 0; i < maxCoordsSize; i += 2)
     {
         if (resultCoords[i] >= 0)
-            cout << resultCoords[i] << ", " << resultCoords[i + 1] << endl;
+            outputFile << resultCoords[i + 1] + 1 << ", " << resultCoords[i] + 1 << endl;
     }
 
+    endWrite = chrono::system_clock::now();
+
+    endTotal = chrono::system_clock::now();
+
+    chrono::duration<double> elapsedTotal, elapsedFile, elapsedCount, elapsedWrite;
+    elapsedTotal = endTotal - startTotal;
+    elapsedFile = endFile - startFile;
+    elapsedCount = endCount - startCount;
+    elapsedWrite = endWrite - startWrite;
+
+    // Print total runtimes from root process
+    std::cout << "Elapsed time file reading: " << elapsedFile.count() << std::endl;
+    std::cout << "Elapsed time pattern count: " << elapsedCount.count() << std::endl;
+    std::cout << "Elapsed time write to file: " << elapsedWrite.count() << std::endl;
+    std::cout << "Elapsed time total: " << elapsedTotal.count() << std::endl;
+    
     delete[] resultCoords;
 
     return 0;
