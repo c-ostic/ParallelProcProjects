@@ -7,10 +7,10 @@ rem Get the project executable location
 set program=.\x64\Release\Project4.exe
 
 rem Set input pattern and thread count data
-set inputs=input1.txt input2.txt input3.txt input4.txt
-set patterns=pattern1.txt pattern2.txt pattern3.txt pattern4.txt
+set inputs=input1.txt input2.txt input3.txt input4.txt input5.txt input6.txt input7.txt
+set patterns=pattern1.txt pattern2.txt pattern3.txt pattern4.txt pattern5.txt pattern6.txt pattern7.txt
 set blockCounts=1 2 4
-set threadCounts=1 32 64 
+set threadCounts=32 64 128
 
 rem Clear the output file
 echo/ > batchOutput.txt

@@ -104,6 +104,9 @@ int main(int argc, char* argv[]) {
     char* d_pattern;
     int* d_resultCoords;
 
+    size_t freeMemBefore, totalMem, freeMemAfter, usedMem;
+    cudaMemGetInfo(&freeMemBefore, &totalMem);
+
     cudaMalloc(&d_input, inputRows * inputColumns * sizeof(char));
     cudaMalloc(&d_pattern, patternRows * patternColumns * sizeof(char));
     cudaMalloc(&d_resultCoords, maxCoordsSize * sizeof(int));
@@ -111,6 +114,9 @@ int main(int argc, char* argv[]) {
     // Copy input and pattern data from host to device
     cudaMemcpy(d_input, input, inputRows * inputColumns * sizeof(char), cudaMemcpyHostToDevice);
     cudaMemcpy(d_pattern, pattern, patternRows * patternColumns * sizeof(char), cudaMemcpyHostToDevice);
+
+    cudaMemGetInfo(&freeMemAfter, &totalMem);
+    usedMem = freeMemBefore - freeMemAfter;
 
     // Launch CUDA kernel for pattern matching
     patternMatchingKernel << < numBlocks, numThreads >> > (d_input, inputRows, inputColumns, d_pattern, patternRows, patternColumns, d_resultCoords, maxCoordsSize);
@@ -151,6 +157,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Elapsed time pattern count: " << elapsedCount.count() << std::endl;
     std::cout << "Elapsed time write to file: " << elapsedWrite.count() << std::endl;
     std::cout << "Elapsed time total: " << elapsedTotal.count() << std::endl;
+    std::cout << "GPU Memory Used: " << usedMem << std::endl;
     
     delete[] resultCoords;
 
